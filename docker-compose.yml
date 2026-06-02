@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: retailmax_postgres
+    environment:
+      POSTGRES_DB: retailmax
+      POSTGRES_USER: retailmax
+      POSTGRES_PASSWORD: retailmax123
+    volumes:
+      - ./DDL.sql:/docker-entrypoint-initdb.d/01_DDL.sql
+      - ./DATA.sql:/docker-entrypoint-initdb.d/02_DATA.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retailmax -d retailmax"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  metabase:
+    image: metabase/metabase:v0.49.6
+    container_name: retailmax_metabase
+    ports:
+      - "3000:3000"
+    environment:
+      MB_DB_TYPE: h2
+      MB_DB_FILE: /metabase-data/metabase.db
+    volumes:
+      - ./metabase-data:/metabase-data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
